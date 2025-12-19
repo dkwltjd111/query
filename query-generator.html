@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SQL Query Generator - 자연어 쿼리 생성기</title>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1e40af;
+            --secondary: #64748b;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --bg-main: #0f172a;
+            --bg-card: #1e293b;
+            --bg-input: #334155;
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --border: #475569;
+            --shadow: rgba(0, 0, 0, 0.3);
+        }
+
+        body {
+            font-family: 'IBM Plex Sans KR', sans-serif;
+            background: var(--bg-main);
+            color: var(--text-primary);
+            line-height: 1.6;
+            min-height: 100vh;
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(37, 99, 235, 0.1) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(16, 185, 129, 0.1) 0px, transparent 50%);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 3rem;
+            padding-top: 2rem;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(135deg, var(--primary), var(--success));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .subtitle {
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+        }
+
+        .main-content {
+            display: grid;
+            gap: 2rem;
+        }
+
+        .card {
+            background: var(--bg-card);
+            border-radius: 12px;
+            padding: 2rem;
+            box-shadow: 0 4px 6px var(--shadow);
+            border: 1px solid var(--border);
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .card-icon {
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+        }
+
+        .card-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+
+        .input-section {
+            margin-bottom: 2rem;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.75rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+        }
+
+        textarea {
+            width: 100%;
+            padding: 1rem;
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-family: 'IBM Plex Sans KR', sans-serif;
+            font-size: 1rem;
+            resize: vertical;
+            min-height: 120px;
+            transition: all 0.2s;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        .button-group {
+            display: flex;
+            gap: 1rem;
+        }
+
+        button {
+            flex: 1;
+            padding: 1rem 2rem;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: 'IBM Plex Sans KR', sans-serif;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .clear-btn {
+            background: var(--bg-input);
+            color: var(--text-secondary);
+        }
+
+        .clear-btn:hover {
+            background: var(--border);
+            box-shadow: none;
+        }
+
+        .result-section {
+            display: none;
+        }
+
+        .result-section.show {
+            display: block;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .info-grid {
+            display: grid;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .info-item {
+            background: var(--bg-input);
+            padding: 1rem;
+            border-radius: 8px;
+            border-left: 3px solid var(--primary);
+        }
+
+        .info-label {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.25rem;
+        }
+
+        .info-value {
+            color: var(--text-primary);
+            font-weight: 500;
+        }
+
+        .code-block {
+            position: relative;
+            background: #1a1f2e;
+            border-radius: 8px;
+            padding: 1.5rem;
+            overflow-x: auto;
+            margin-bottom: 1.5rem;
+        }
+
+        .code-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .code-label {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .copy-btn {
+            padding: 0.5rem 1rem;
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            color: var(--text-secondary);
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.875rem;
+            transition: all 0.2s;
+            flex: none;
+        }
+
+        .copy-btn:hover {
+            background: var(--border);
+            color: var(--text-primary);
+            transform: none;
+            box-shadow: none;
+        }
+
+        pre {
+            margin: 0;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.9rem;
+            line-height: 1.6;
+            color: #e2e8f0;
+        }
+
+        code {
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .description-text {
+            background: var(--bg-input);
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1.5rem;
+            line-height: 1.8;
+        }
+
+        .risk-list {
+            list-style: none;
+        }
+
+        .risk-item {
+            background: rgba(239, 68, 68, 0.1);
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 0.75rem;
+            border-left: 3px solid var(--danger);
+            display: flex;
+            gap: 0.75rem;
+        }
+
+        .risk-icon {
+            color: var(--danger);
+            font-weight: bold;
+            flex-shrink: 0;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 2rem;
+        }
+
+        .loading.show {
+            display: block;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            margin: 0 auto 1rem;
+            border: 3px solid var(--border);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .example-queries {
+            display: grid;
+            gap: 0.75rem;
+            margin-top: 1rem;
+        }
+
+        .example-query {
+            background: var(--bg-input);
+            padding: 0.875rem;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 1px solid transparent;
+        }
+
+        .example-query:hover {
+            border-color: var(--primary);
+            background: rgba(37, 99, 235, 0.1);
+        }
+
+        .example-query-text {
+            font-size: 0.95rem;
+            color: var(--text-primary);
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+
+            h1 {
+                font-size: 2rem;
+            }
+
+            .card {
+                padding: 1.5rem;
+            }
+
+            .button-group {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🔍 SQL Query Generator</h1>
+            <p class="subtitle">자연어로 데이터베이스 쿼리를 생성하세요</p>
+        </header>
+
+        <div class="main-content">
+            <!-- 입력 섹션 -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-icon">✏️</div>
+                    <h2 class="card-title">요청사항 입력</h2>
+                </div>
+                <div class="input-section">
+                    <label for="queryInput">원하시는 분석 내용을 자연어로 입력하세요</label>
+                    <textarea 
+                        id="queryInput" 
+                        placeholder="예: 쿠폰 및 적립금을 동시에 사용한 고객수와 매출을 알고싶어"
+                    ></textarea>
+                </div>
+                <div class="button-group">
+                    <button id="generateBtn">쿼리 생성하기</button>
+                    <button class="clear-btn" id="clearBtn">초기화</button>
+                </div>
+
+                <!-- 예시 쿼리 -->
+                <div class="example-queries">
+                    <div style="color: var(--text-secondary); font-size: 0.875rem; margin-bottom: 0.5rem;">💡 예시 쿼리를 클릭해보세요</div>
+                    <div class="example-query" data-query="쿠폰 및 적립금을 동시에 사용한 고객수와 매출을 알고싶어">
+                        <div class="example-query-text">쿠폰 및 적립금을 동시에 사용한 고객수와 매출을 알고싶어</div>
+                    </div>
+                    <div class="example-query" data-query="PLCC 가입 고객의 월별 평균 구매금액을 알려줘">
+                        <div class="example-query-text">PLCC 가입 고객의 월별 평균 구매금액을 알려줘</div>
+                    </div>
+                    <div class="example-query" data-query="리워드를 2개 이상 받은 주문의 평균 할인율은?">
+                        <div class="example-query-text">리워드를 2개 이상 받은 주문의 평균 할인율은?</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 로딩 -->
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p>쿼리를 생성하고 있습니다...</p>
+            </div>
+
+            <!-- 결과 섹션 -->
+            <div class="result-section" id="resultSection">
+                <!-- 테이블 정보 -->
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-icon">📊</div>
+                        <h2 class="card-title">사용된 테이블</h2>
+                    </div>
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <div class="info-label">테이블 목록</div>
+                            <div class="info-value" id="tableList">주문내역, 결제내역, 쿠폰</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 생성된 쿼리 -->
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-icon">💻</div>
+                        <h2 class="card-title">생성된 SQL 쿼리</h2>
+                    </div>
+                    <div class="code-block">
+                        <div class="code-header">
+                            <span class="code-label">Snowflake SQL</span>
+                            <button class="copy-btn" onclick="copyQuery()">📋 복사</button>
+                        </div>
+                        <pre id="queryCode"><code>-- 쿼리가 여기에 표시됩니다</code></pre>
+                    </div>
+                </div>
+
+                <!-- 쿼리 설명 -->
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-icon">📝</div>
+                        <h2 class="card-title">쿼리 설명</h2>
+                    </div>
+                    <div class="description-text" id="queryDescription">
+                        이 쿼리는...
+                    </div>
+                </div>
+
+                <!-- 주의사항 -->
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-icon">⚠️</div>
+                        <h2 class="card-title">주의사항 및 리스크</h2>
+                    </div>
+                    <ul class="risk-list" id="riskList">
+                        <li class="risk-item">
+                            <span class="risk-icon">⚠️</span>
+                            <span>주의사항이 여기에 표시됩니다</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 예시 쿼리 클릭 이벤트
+        document.querySelectorAll('.example-query').forEach(item => {
+            item.addEventListener('click', function() {
+                const query = this.getAttribute('data-query');
+                document.getElementById('queryInput').value = query;
+            });
+        });
+
+        // 쿼리 생성 버튼
+        document.getElementById('generateBtn').addEventListener('click', generateQuery);
+
+        // 초기화 버튼
+        document.getElementById('clearBtn').addEventListener('click', function() {
+            document.getElementById('queryInput').value = '';
+            document.getElementById('resultSection').classList.remove('show');
+        });
+
+        // 쿼리 생성 함수 (시뮬레이션)
+        async function generateQuery() {
+            const input = document.getElementById('queryInput').value.trim();
+            
+            if (!input) {
+                alert('요청사항을 입력해주세요.');
+                return;
+            }
+
+            // 로딩 표시
+            document.getElementById('loading').classList.add('show');
+            document.getElementById('resultSection').classList.remove('show');
+
+            // 시뮬레이션 딜레이 (실제로는 API 호출)
+            await new Promise(resolve => setTimeout(resolve, 1500));
+
+            // 예시 응답 (실제로는 Claude API 호출 결과)
+            const result = {
+                tables: ['주문내역', '결제내역', '쿠폰'],
+                query: `-- 쿠폰 및 적립금을 동시에 사용한 고객 분석
+WITH payment_summary AS (
+    SELECT 
+        "주문번호",
+        MAX(CASE WHEN "지불수단구분코드" = '05' THEN 1 ELSE 0 END) AS 적립금사용,
+        MAX(CASE WHEN "지불수단구분코드" = '10' THEN 1 ELSE 0 END) AS 포인트사용
+    FROM DW."주문"."결제내역"
+    GROUP BY "주문번호"
+),
+coupon_usage AS (
+    SELECT DISTINCT "주문번호"
+    FROM DW."프로모션"."쿠폰"
+    WHERE "주문번호" IS NOT NULL
+)
+SELECT 
+    COUNT(DISTINCT o."고객번호") AS 고객수,
+    SUM(o."순주문금액") AS 총매출,
+    AVG(o."순주문금액") AS 평균주문금액
+FROM DW."주문"."주문내역" o
+INNER JOIN payment_summary p 
+    ON o."주문번호" = p."주문번호"
+INNER JOIN coupon_usage c 
+    ON o."주문번호" = c."주문번호"
+WHERE p.적립금사용 = 1 
+    AND o."순주문금액" > 0;`,
+                description: `이 쿼리는 쿠폰과 적립금을 동시에 사용한 고객의 수와 매출을 분석합니다.
+
+주요 로직:
+1. payment_summary CTE: 결제내역에서 주문별로 적립금(지불수단코드 05) 사용 여부를 확인
+2. coupon_usage CTE: 쿠폰 테이블에서 쿠폰을 사용한 주문 목록 추출
+3. 메인 쿼리: 두 조건을 모두 만족하는 주문의 고객수, 총매출, 평균주문금액 집계
+
+결과:
+- 고객수: 중복 제거된 고유 고객 수
+- 총매출: 순주문금액의 합계
+- 평균주문금액: 주문당 평균 금액`,
+                risks: [
+                    '복합결제 시 한 주문에 여러 결제내역이 존재하므로 payment_summary에서 MAX를 사용하여 중복을 방지했습니다.',
+                    '쿠폰 테이블의 주문번호가 NULL인 경우(미사용 쿠폰)는 자동으로 제외됩니다.',
+                    '순주문금액이 0 이하인 주문(취소/반품)은 WHERE 조건으로 제외했습니다.',
+                    'H.Point(지불수단코드 10)를 사용한 경우도 포함하려면 조건을 수정해야 합니다.'
+                ]
+            };
+
+            // 결과 표시
+            displayResult(result);
+
+            // 로딩 숨기기
+            document.getElementById('loading').classList.remove('show');
+        }
+
+        function displayResult(result) {
+            // 테이블 목록
+            document.getElementById('tableList').textContent = result.tables.join(', ');
+
+            // 쿼리 코드
+            document.getElementById('queryCode').textContent = result.query;
+
+            // 설명
+            document.getElementById('queryDescription').textContent = result.description;
+
+            // 리스크 목록
+            const riskList = document.getElementById('riskList');
+            riskList.innerHTML = result.risks.map(risk => `
+                <li class="risk-item">
+                    <span class="risk-icon">⚠️</span>
+                    <span>${risk}</span>
+                </li>
+            `).join('');
+
+            // 결과 섹션 표시
+            document.getElementById('resultSection').classList.add('show');
+        }
+
+        function copyQuery() {
+            const queryText = document.getElementById('queryCode').textContent;
+            navigator.clipboard.writeText(queryText).then(() => {
+                const btn = event.target;
+                const originalText = btn.textContent;
+                btn.textContent = '✅ 복사됨!';
+                setTimeout(() => {
+                    btn.textContent = originalText;
+                }, 2000);
+            });
+        }
+    </script>
+</body>
+</html>
